@@ -1,0 +1,35 @@
+ANNOTATION_DIR=/cellar/shared/carterlab/software/SCENIC/annotations
+DATABASE_DIR=/cellar/shared/carterlab/software/SCENIC/databases
+
+# GRN Inference
+loom_in=pbmc10k_filtered_subset_scenic.loom
+tf_list=25_tfs.txt
+out_file=out/test_adj.tsv
+method=grnboost2
+sbatch --job-name=grn_test --cpus-per-task=16 --mem-per-cpu=4G grnInference.sh $loom_in $tf_list $out_file $method
+
+# Enrichment and pruning
+adj_in=out/test_adj.tsv
+ranking=$DATABASE_DIR/hg38__refseq-r80__10kb_up_and_down_tss.mc9nr.feather
+annotation=$ANNOTATION_DIR/motifs-v9-nr.hgnc-m0.001-o0.0.tbl
+loom_in=pbmc10k_filtered_scenic.loom
+out_file=out/test_reg.csv
+sbatch --job-name=ctx_test --cpus-per-task=16 --mem-per-cpu=4G cisTarget.sh $adj_in $ranking $annotation $loom_in $out_file
+
+# AUCell calculation
+loom_in=pbmc10k_filtered_scenic.loom
+regulon_in=out/test_reg.csv
+out_file=out/test_pyscenic_output.loom
+sbatch --job-name=aucell_test --cpus-per-task=16 --mem-per-cpu=4G AUCell.sh $loom_in $regulon_in $out_file
+
+# SCENIC protocol
+loom_in=data/pbmc10k_filtered_subset_scenic.loom
+tf_list=data/25_tfs.txt
+ranking=$DATABASE_DIR/hg38__refseq-r80__10kb_up_and_down_tss.mc9nr.feather
+annotation=$ANNOTATION_DIR/motifs-v9-nr.hgnc-m0.001-o0.0.tbl
+method=grnboost2
+out_name=out/test
+sbatch --job-name=SCENICprotocol_test --cpus-per-task=16 --mem-per-cpu=4G SCENICprotocol.sh $loom_in $tf_list $ranking $annotation $method $out_name
+
+# SCENIC multirun protocol
+sbatch --job-name=SCENICprotocol_multirun_test --cpus-per-task=4 --mem-per-cpu=4G --array=1-5%5 SCENICprotocol_multirun.sh $loom_in $tf_list $ranking $annotation $method $out_name
