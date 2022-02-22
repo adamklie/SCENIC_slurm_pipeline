@@ -26,7 +26,7 @@ echo -e "Using tfs in: $tf_list"
 echo -e "Using regulatory feature database: $ranking"
 echo -e "Using regulatory feature to TF annotation from: $annotation"
 echo -e "Running using the $method algorithm"
-echo -e "Outputting with prefix: $out_name\n"
+echo -e "Outputting with prefix: ${out_name}_run${SLURM_ARRAY_TASK_ID}\n"
 
 # GRN inference
 CMD="pyscenic grn \
@@ -39,10 +39,10 @@ $CMD
 echo -e ""
 
 # Enrichment and pruning
-CMD="pyscenic ctx ${out_name}_adj.tsv \
+CMD="pyscenic ctx ${out_name}_run${SLURM_ARRAY_TASK_ID}_adj.tsv \
 $ranking \
 --annotations_fname $annotation \
---expression_mtx_fname data/pbmc10k_filtered_scenic.loom \
+--expression_mtx_fname $loom_in \
 --output ${out_name}_run${SLURM_ARRAY_TASK_ID}_reg.csv  \
 --mask_dropouts \
 --num_workers $SLURM_CPUS_PER_TASK"
@@ -52,7 +52,7 @@ echo -e ""
 
 # AUCell calculation
 CMD="pyscenic aucell \
-data/pbmc10k_filtered_scenic.loom \
+$loom_in \
 ${out_name}_run${SLURM_ARRAY_TASK_ID}_reg.csv  \
 --output ${out_name}_run${SLURM_ARRAY_TASK_ID}_pyscenic_output.loom \
 --num_workers $SLURM_CPUS_PER_TASK"
